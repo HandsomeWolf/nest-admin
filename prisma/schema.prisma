@@ -1,0 +1,107 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "mysql"
+  url      = env("DATABASE_URL")
+}
+
+model Users {
+  id        Int          @id @default(autoincrement())
+  username  String       @unique
+  password  String
+  name      String?
+  // 用户状态 0-禁用 1-启用
+  status    Int          @default(1) @db.TinyInt
+  createdAt DateTime     @default(now())
+  updatedAt DateTime     @updatedAt
+  profileId Int?         @unique
+  logs      Logs[]
+  profile   Profile?
+  roles     UsersRoles[]
+
+  @@map("users")
+}
+
+model Logs {
+  id        Int      @id @default(autoincrement())
+  path      String?
+  methods   String?
+  data      String?
+  result    String?
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  userId    Int
+  ip        String?
+  user      Users    @relation(fields: [userId], references: [id])
+
+  @@index([userId], map: "logs_userId_fkey")
+  @@map("logs")
+}
+
+model Roles {
+  id          Int          @id @default(autoincrement())
+  name        String
+  createdAt   DateTime     @default(now())
+  updatedAt   DateTime     @updatedAt
+  description String?
+  menus       RolesMenus[]
+  userRoles   UsersRoles[]
+
+  @@map("roles")
+}
+
+model UsersRoles {
+  id        Int      @id @default(autoincrement())
+  userId    Int
+  roleId    Int
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  role      Roles    @relation(fields: [roleId], references: [id])
+  user      Users    @relation(fields: [userId], references: [id])
+
+  @@index([roleId], map: "users_roles_roleId_fkey")
+  @@index([userId], map: "users_roles_userId_fkey")
+  @@map("users_roles")
+}
+
+model Menus {
+  id        Int          @id @default(autoincrement())
+  name      String
+  path      String
+  sortNo    Int          @default(0)
+  acl       String?
+  icon      String?
+  createdAt DateTime     @default(now())
+  updatedAt DateTime     @updatedAt
+  roles     RolesMenus[]
+
+  @@map("menus")
+}
+
+model RolesMenus {
+  id        Int      @id @default(autoincrement())
+  roleId    Int
+  menuId    Int
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  menu      Menus    @relation(fields: [menuId], references: [id])
+  role      Roles    @relation(fields: [roleId], references: [id])
+
+  @@index([menuId], map: "roles_menus_menuId_fkey")
+  @@index([roleId], map: "roles_menus_roleId_fkey")
+  @@map("roles_menus")
+}
+
+model Profile {
+  id      Int     @id @default(autoincrement())
+  // 性别 0-保密 1-男 2-女
+  gender  Int     @default(0) @db.TinyInt
+  photo   String?
+  address String?
+  userId  Int     @unique
+  user    Users   @relation(fields: [userId], references: [id])
+
+  @@map("profile")
+}
